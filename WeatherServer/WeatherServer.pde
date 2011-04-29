@@ -63,14 +63,14 @@
 #define EEPROM_ADDR_PROXY_SERVER	(EEPROM_ADDR_HTTP_PORT + 2)
 #define EEPROM_ADDR_PROXY_PORT	(EEPROM_ADDR_PROXY_SERVER + 4)
 
-SoftwareSerial rfSerial = SoftwareSerial(RF_RX_PIN, RF_TX_PIN);
-SerialPacket serialPacket = SerialPacket(&rfSerial);
+SoftwareSerial rf_serial = SoftwareSerial(RF_RX_PIN, RF_TX_PIN);
+SerialPacket serial_packet = SerialPacket(&rf_serial);
 
 /* Setup a OneWire instance to communicate with any OneWire devices
    (not just Maxim/Dallas temperature ICs). */
 OneWire one_wire(ONE_WIRE_BUS);
 
-/* Dallas Temperature library runnin on our OneWire bus. */
+/* Dallas Temperature library running on our OneWire bus. */
 DallasTemperature sensors(&one_wire);
 
 CommandLine cmdline = CommandLine();
@@ -139,6 +139,11 @@ Available commands are:\n\
                   `mac', `ip', `gw', `subnet'\n\
   info          show current weather information\n";
 
+const char err_too_many_clients[] PROGMEM = "Too many clients\n";
+const char err_too_many_sensors[] PROGMEM = "Too many sensors\n";
+const char err_malformed_packet[] PROGMEM = "Malformed packet\n";
+const char err_cmd_invalid_args[] PROGMEM = "Invalid amount of arguments\n";
+
 const char http_proxy_prefix[] PROGMEM = "POST http://";
 const char http_prefix[] PROGMEM = "POST ";
 const char http_suffix[] PROGMEM = "/data_api/add HTTP/1.0\r\n\
@@ -156,13 +161,13 @@ setup(void)
   Serial.begin(9600);
   HomeWeather::print_progstr(bannerstr);
 
-  /* Start temperature sensons. */
+  /* Start temperature sensors. */
   sensors.begin();
 
   pinMode(RF_RX_PIN, INPUT);
   pinMode(RF_TX_PIN, OUTPUT);
 
-  rfSerial.begin(2400);
+  rf_serial.begin(2400);
 
   msg_seqnum = 0;
 
@@ -191,11 +196,11 @@ setup(void)
   GetPut::eeprom_read_data(buf, sizeof(buf), EEPROM_ADDR_PROXY_PORT);
   proxy_port = GetPut::get_16bit(buf);
 
-  HomeWeather::print_data(12,       "id", id, sizeof(id));
+  HomeWeather::print_data(12,      "id", id, sizeof(id));
   HomeWeather::print_data(8,   "secret", secret, sizeof(secret));
-  HomeWeather::print_data(11,      "mac", mac, sizeof(mac));
-  HomeWeather::print_dotted(12,     "ip", ip, sizeof(ip));
-  HomeWeather::print_dotted(12,     "gw", gateway, sizeof(gateway));
+  HomeWeather::print_data(11,     "mac", mac, sizeof(mac));
+  HomeWeather::print_dotted(12,    "ip", ip, sizeof(ip));
+  HomeWeather::print_dotted(12,    "gw", gateway, sizeof(gateway));
   HomeWeather::print_dotted(8, "subnet", subnet, sizeof(subnet));
 
   HomeWeather::print_label(3, "http-server");
@@ -221,7 +226,7 @@ setup(void)
 }
 
 void
-process_command()
+process_command(void)
 {
   int argc;
   char **argv = cmdline.get_arguments(&argc);
@@ -239,7 +244,7 @@ process_command()
     {
       if (argc != 3)
         {
-          Serial.println("Invalid amount of arguments for command `set'");
+          HomeWeather::print_progstr(err_cmd_invalid_args);
           return;
         }
 
@@ -360,9 +365,6 @@ resolve_dns(void)
     }
 
   Serial.println("Resolving server IP");
-
-  //http_client = new Client(server, 80);
-  //http_client->connect();
 }
 
 static void
@@ -377,21 +379,20 @@ poll_rf_clients(void)
   ClientInfo *client;
   SensorValue *sensor = 0;
 
-  data = serialPacket.receive(&data_len);
+  data = serial_packet.receive(&data_len);
 
   if (!SerialPacket::parse_message(&msg_type, &msg_data, &msg_len,
                                    &data, &data_len)
       || msg_type != MSG_CLIENT_ID)
     {
-      Serial.print("E1");
-      delay(500);
+      HomeWeather::print_progstr(err_malformed_packet);
       return;
     }
 
   client = ClientInfo::lookup(clients, MAX_CLIENTS, msg_data, msg_len);
-  if (client == 0)
+  if (!client)
     {
-      Serial.println("E#clients");
+      HomeWeather::print_progstr(err_too_many_clients);
       return;
     }
 
@@ -400,12 +401,11 @@ poll_rf_clients(void)
       || msg_type != MSG_SEQNUM
       || msg_len != 4)
     {
-      Serial.println("E2");
-      delay(500);
+      HomeWeather::print_progstr(err_malformed_packet);
       return;
     }
 
-  val = SerialPacket::get_32bit(msg_data);
+  val = GetPut::get_32bit(msg_data);
 
   if (val > client->last_seqnum)
     client->packetloss += val - client->last_seqnum - 1;
@@ -419,42 +419,35 @@ poll_rf_clients(void)
       if (!SerialPacket::parse_message(&msg_type, &msg_data, &msg_len,
                                        &data, &data_len))
         {
-          Serial.println("E3");
-          delay(500);
+          HomeWeather::print_progstr(err_malformed_packet);
           return;
         }
 
       switch (msg_type)
         {
         case MSG_SENSOR_ID:
-          Serial.println("SENSOR");
           sensor = client->lookup(msg_data, msg_len);
-          if (sensor == 0)
+          if (!sensor)
             {
-              Serial.println("E#values");
+              HomeWeather::print_progstr(err_too_many_sensors);
               return;
             }
-          Serial.println(sensor->id_len);
           break;
 
         case MSG_SENSOR_VALUE:
-          Serial.println("VALUE");
           if (sensor == 0 || msg_len != 4)
             {
-              Serial.println("E4");
-              delay(500);
+              HomeWeather::print_progstr(err_malformed_packet);
               return;
             }
 
-          sensor->value = (int32_t) SerialPacket::get_32bit(msg_data);
+          sensor->value = (int32_t) GetPut::get_32bit(msg_data);
           sensor->dirty = true;
-          Serial.println(sensor->value);
           sensor = 0;
           break;
 
         default:
-          Serial.println("E5");
-          delay(500);
+          HomeWeather::print_progstr(err_malformed_packet);
           return;
           break;
         }
@@ -467,6 +460,15 @@ poll_local_sensors(void)
   DeviceAddress addr;
   int count;
   int i;
+  ClientInfo *client;
+  SensorValue *sensor;
+
+  client = ClientInfo::lookup(clients, MAX_CLIENTS, id, sizeof(id));
+  if (!client)
+    {
+      HomeWeather::print_progstr(err_too_many_clients);
+      return;
+    }
 
   sensors.requestTemperatures();
 
@@ -481,13 +483,16 @@ poll_local_sensors(void)
       if (temp == DEVICE_DISCONNECTED)
         continue;
 
-      if (verbose)
+      sensor = client->lookup(addr, sizeof(addr));
+      if (!sensor)
         {
-          Serial.print("Temp ");
-          Serial.print(i);
-          Serial.print(" is ");
-          Serial.println(temp);
+          HomeWeather::print_progstr(err_too_many_sensors);
+          continue;
         }
+
+      sensor->value = (int32_t) (temp * 100);
+      sensor->dirty = true;
+      client->dirty = true;
     }
 }
 
@@ -505,7 +510,6 @@ post_json_to_server(void)
   json.add_object();
 
   json.add("id", id, sizeof(id));
-  json.add("ts", millis());
   json.add("sn", msg_seqnum++);
 
   json.add_array("c");
@@ -520,8 +524,12 @@ post_json_to_server(void)
       json.add_object();
 
       json.add("id", client->id, client->id_len);
-      json.add("pkt", client->last_seqnum);
-      json.add("loss", client->packetloss);
+
+      if (client->packetloss)
+        {
+          json.add("loss", client->packetloss);
+          client->packetloss = 0;
+        }
 
       json.add_array("s");
 
@@ -600,10 +608,8 @@ post_json_to_server(void)
 void
 loop(void)
 {
-#if 1
   if (cmdline.read())
     process_command();
-#endif
 
   switch (runlevel)
     {

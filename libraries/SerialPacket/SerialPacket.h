@@ -38,10 +38,6 @@ class SerialPacket
                             size_t *msg_len_return,
                             uint8_t **datap, size_t *data_lenp);
 
-  static void put_32bit(uint8_t *buf, uint32_t val);
-
-  static uint32_t get_32bit(uint8_t *buf);
-
   /* The number of packets received. */
   uint32_t num_packets;
 

@@ -3,6 +3,7 @@
  */
 
 #include "SerialPacket.h"
+#include <GetPut.h>
 
 #define SP_SEP 0x80
 #define SP_HDR 0x81
@@ -187,7 +188,7 @@ SerialPacket::add_message(uint8_t type, uint32_t value)
   buffer[bufpos++] = type;
   buffer[bufpos++] = 4;
 
-  put_32bit(buffer + bufpos, value);
+  GetPut::put_32bit(buffer + bufpos, value);
   bufpos += 4;
 
   return true;
@@ -229,29 +230,4 @@ SerialPacket::parse_message(uint8_t *type_return, uint8_t **msg_return,
   *data_lenp = data_len;
 
   return true;
-}
-
-void
-SerialPacket::put_32bit(uint8_t *buf, uint32_t val)
-{
-  buf[0] = (val >> 24) & 0xff;
-  buf[1] = (val >> 16) & 0xff;
-  buf[2] = (val >> 8) & 0xff;
-  buf[3] = (val >> 0) & 0xff;
-}
-
-uint32_t
-SerialPacket::get_32bit(uint8_t *buf)
-{
-  uint32_t val;
-
-  val = buf[0];
-  val <<= 8;
-  val |= buf[1];
-  val <<= 8;
-  val |= buf[2];
-  val <<= 8;
-  val |= buf[3];
-
-  return val;
 }
