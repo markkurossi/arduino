@@ -33,11 +33,10 @@ private:
   bool is_object();
   bool obj_separator();
 
-  char *buffer;
-  size_t buffer_len;
+  char buffer[330];
   size_t buffer_pos;
 
-  static const size_t STACK_SIZE = 16;
+  static const size_t STACK_SIZE = 8;
 
   char stack[STACK_SIZE];
   size_t stack_pos;

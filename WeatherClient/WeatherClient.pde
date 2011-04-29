@@ -14,11 +14,11 @@
 
 /* Temperature sensor data wire is plugged into port 2 on the
    Arduino. */
-#define ONE_WIRE_BUS 2
+#define ONE_WIRE_BUS 4
 
 /* RF transmitter pin. */
-#define RF_TX_PIN 4
-#define RF_RX_PIN 5
+#define RF_RX_PIN 2
+#define RF_TX_PIN 3
 
 #define RX_LED_PIN 6
 #define OW_LED_PIN 7
@@ -84,8 +84,8 @@ void setup(void)
     verbose = false;
 
   Serial.print("     id: ");
-  for (i = 0; i < sizeof(id); i++)
-    Serial.print(id[i], HEX);
+  for (i = 0; i < sizeof(client_id); i++)
+    Serial.print(client_id[i], HEX);
   Serial.println("");
 
   Serial.print(" secret: ");

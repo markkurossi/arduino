@@ -23,10 +23,11 @@ SensorValue *
 ClientInfo::lookup(const uint8_t *id, size_t id_len)
 {
   int i;
+  SensorValue *value;
 
-  for (i = 0; i < 5; i++)
+  for (i = 0; i < MAX_SENSORS; i++)
     {
-      SensorValue *value = &sensors[i];
+      value = &sensors[i];
 
       if (value->id_len == 0)
         break;
@@ -35,10 +36,15 @@ ClientInfo::lookup(const uint8_t *id, size_t id_len)
         return value;
     }
 
-  if (i >= 5)
+  if (i >= MAX_SENSORS)
     return 0;
 
-  return &sensors[i];
+  value = &sensors[i];
+
+  value->id_len = id_len;
+  memcpy(value->id, id, id_len);
+
+  return value;
 }
 
 ClientInfo *

@@ -5,9 +5,7 @@
 #include "JSON.h"
 
 JSON::JSON()
-  : buffer(0),
-    buffer_len(0),
-    buffer_pos(0),
+  : buffer_pos(0),
     stack_pos(0)
 {
 }
@@ -150,24 +148,8 @@ JSON::append(const char *value)
 {
   size_t len = strlen(value);
 
-  if (buffer_pos + len > buffer_len)
-    {
-      size_t new_len = buffer_len + 512;
-      char *n;
-
-      while (buffer_pos + len > new_len)
-        new_len += 512;
-
-      n = (char *) malloc(new_len);
-      if (n == 0)
-        return false;
-
-      memcpy(n, buffer, buffer_pos);
-
-      free(buffer);
-      buffer = n;
-      buffer_len = new_len;
-    }
+  if (buffer_pos + len > sizeof(buffer))
+    return false;
 
   memcpy(buffer + buffer_pos, value, len);
   buffer_pos += len;

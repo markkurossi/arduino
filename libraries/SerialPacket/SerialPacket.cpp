@@ -164,15 +164,13 @@ SerialPacket::clear(void)
 bool
 SerialPacket::add_message(uint8_t type, const uint8_t *data, size_t data_len)
 {
-  if (bufpos + 1 + data_len > sizeof(buffer))
+  if (bufpos + 2 + data_len > sizeof(buffer))
     return false;
-  if ((type & 0xf0) != 0 || (data_len & 0xf0) != 0)
+  if (data_len > 0xff)
     return false;
-
-  type <<= 4;
-  type |= (uint8_t) data_len;
 
   buffer[bufpos++] = type;
+  buffer[bufpos++] = data_len;
 
   memcpy(buffer + bufpos, data, data_len);
   bufpos += data_len;
@@ -183,16 +181,11 @@ SerialPacket::add_message(uint8_t type, const uint8_t *data, size_t data_len)
 bool
 SerialPacket::add_message(uint8_t type, uint32_t value)
 {
-  if (bufpos + 5 > sizeof(buffer))
+  if (bufpos + 6 > sizeof(buffer))
     return false;
-
-  if ((type & 0xf0) != 0)
-    return false;
-
-  type <<= 4;
-  type |= 4;
 
   buffer[bufpos++] = type;
+  buffer[bufpos++] = 4;
 
   put_32bit(buffer + bufpos, value);
   bufpos += 4;
@@ -215,15 +208,14 @@ SerialPacket::parse_message(uint8_t *type_return, uint8_t **msg_return,
   size_t data_len = *data_lenp;
   uint8_t val;
 
-  if (data_len < 1)
+  if (data_len < 2)
     return false;
 
-  val = data[0];
-  data++;
-  data_len--;
+  *type_return = data[0];
+  *msg_len_return = data[1];
 
-  *type_return = val >> 4;
-  *msg_len_return = val & 0xf;
+  data += 2;
+  data_len -= 2;
 
   if (*msg_len_return > data_len)
     return false;
