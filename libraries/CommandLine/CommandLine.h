@@ -1,6 +1,25 @@
 /* -*- c++ -*-
  *
  * CommandLine.h
+ *
+ * Author: Markku Rossi <mtr@iki.fi>
+ *
+ * Copyright (c) 2011 Markku Rossi
+ *
+ * This program is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ *
  */
 
 #ifndef COMMANDLINE_H
@@ -8,34 +27,38 @@
 
 #include "WProgram.h"
 
+#define COMMAND_LINE_MAX_ARGS 4
+
 class CommandLine
 {
 public:
 
+  /* Initialize command line processing module. */
   CommandLine();
 
+  /* Read more command line input from serial line.  Return true if a
+     new line has been read and false otherwise. */
   bool read(void);
 
+  /* Get the command line arguments of the latest command.  The method
+     returns a pointer to the argument array.  The number of arguments
+     is returned in `argc_return'. */
   char **get_arguments(int *argc_return);
-
-  static int32_t atoi(const char *input);
-
-  static size_t hex_decode(const char *input, uint8_t *buffer,
-                           size_t buffer_len);
 
 private:
 
+  /* Split the current command line into argument array.  Return true
+     if the command was split and false on error or if the input line
+     was empty. */
   bool split_arguments(void);
 
-  static int atoh(uint8_t ch);
+  /* Buffer for accumulating command line. */
+  uint8_t buffer[64];
+  uint8_t buffer_pos;
 
-  uint8_t buffer[256];
-  size_t buffer_pos;
-
-  static const int MAX_ARGS = 20;
-
-  char *argv[MAX_ARGS];
-  int argc;
+  /* Parsed command line arguments. */
+  uint8_t argc;
+  char *argv[COMMAND_LINE_MAX_ARGS];
 };
 
 #endif /* not COMMANDLINE_H */

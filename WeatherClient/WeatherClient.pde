@@ -16,7 +16,7 @@
    Arduino. */
 #define ONE_WIRE_BUS 4
 
-/* RF transmitter pin. */
+/* RF pins. */
 #define RF_RX_PIN 2
 #define RF_TX_PIN 3
 
@@ -31,6 +31,13 @@
 SoftwareSerial rfSerial = SoftwareSerial(RF_RX_PIN, RF_TX_PIN);
 SerialPacket serialPacket = SerialPacket(&rfSerial);
 
+/* Setup a oneWire instance to communicate with any OneWire devices
+   (not just Maxim/Dallas temperature ICs). */
+OneWire oneWire(ONE_WIRE_BUS);
+
+// Pass our oneWire reference to Dallas Temperature.
+DallasTemperature sensors(&oneWire);
+
 CommandLine cmdline = CommandLine();
 
 uint8_t client_id[16];
@@ -41,14 +48,6 @@ bool verbose = false;
 uint32_t msg_seqnum;
 
 uint8_t buffer[255];
-
-/*
- * Setup a oneWire instance to communicate with any OneWire devices
- * (not just Maxim/Dallas temperature ICs). */
-OneWire oneWire(ONE_WIRE_BUS);
-
-// Pass our oneWire reference to Dallas Temperature.
-DallasTemperature sensors(&oneWire);
 
 void setup(void)
 {

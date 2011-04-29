@@ -1,9 +1,29 @@
 /*
  * CommandLine.cpp
+ *
+ * Author: Markku Rossi <mtr@iki.fi>
+ *
+ * Copyright (c) 2011 Markku Rossi
+ *
+ * This program is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ *
  */
 
 #include "CommandLine.h"
 
+/* Test if the character `ch' is a whitespace character. */
 #define ISSPACE(ch)     \
 ((ch) == ' ' || (ch) == '\t' || (ch) == '\r' || (ch) == '\n')
 
@@ -46,81 +66,12 @@ CommandLine::get_arguments(int *argc_return)
   return argv;
 }
 
-int32_t
-CommandLine::atoi(const char *input)
-{
-  int32_t val = 0;
-  int i;
-
-  for (i = 0; input[i]; i++)
-    {
-      char ch  = input[i];
-
-      if ('0' <= ch && ch <= '9')
-        {
-          val *= 10;
-          val += ch - '0';
-        }
-      else
-        {
-          break;
-        }
-    }
-
-  return val;
-}
-
-size_t
-CommandLine::hex_decode(const char *input, uint8_t *buffer, size_t buffer_len)
-{
-  int len;
-  int i;
-  int pos = 0;
-  int val, v;
-
-  if (input[0] == '0' && input[1] == 'x')
-    input += 2;
-
-  len = strlen(input);
-
-  if ((len % 2) == 0)
-    {
-      i = 0;
-    }
-  else
-    {
-      i = 1;
-
-      val = atoh(buffer[0]);
-      if (val < 0 || pos >= buffer_len)
-        return pos;
-
-      buffer[pos++] = (uint8_t) val;
-    }
-
-  for (; i < len; i += 2)
-    {
-      val = atoh(input[i]);
-      v = atoh(input[i + 1]);
-
-      if (val < 0 || v < 0 || pos >= buffer_len)
-        return pos;
-
-      val <<= 4;
-      val |= v;
-
-      buffer[pos++] = (uint8_t) val;
-    }
-
-  return pos;
-}
-
 bool
 CommandLine::split_arguments(void)
 {
   size_t i = 0;
 
-  for (argc = 0; argc < MAX_ARGS; argc++)
+  for (argc = 0; argc < COMMAND_LINE_MAX_ARGS; argc++)
     {
       /* Skip leading whitespace. */
       for (; i < buffer_pos && ISSPACE(buffer[i]); i++)
@@ -144,17 +95,4 @@ CommandLine::split_arguments(void)
     }
 
   return argc > 0;
-}
-
-int
-CommandLine::atoh(uint8_t ch)
-{
-  if ('0' <= ch && ch <= '9')
-    return ch - '0';
-  if ('a' <= ch && ch <= 'f')
-    return 10 + ch - 'a';
-  if ('A' <= ch && ch <= 'F')
-    return 10 + ch - 'A';
-
-  return -1;
 }

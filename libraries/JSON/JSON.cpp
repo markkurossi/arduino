@@ -1,11 +1,32 @@
 /*
  * JSON.cpp
+ *
+ * Author: Markku Rossi <mtr@iki.fi>
+ *
+ * Copyright (c) 2011 Markku Rossi
+ *
+ * This program is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ *
  */
 
 #include "JSON.h"
 
-JSON::JSON()
-  : buffer_pos(0),
+JSON::JSON(char *buffer, size_t buffer_len)
+  : buffer(buffer),
+    buffer_len(buffer_len),
+    buffer_pos(0),
     stack_pos(0)
 {
 }
@@ -135,7 +156,7 @@ JSON::finish(void)
 bool
 JSON::push(char type)
 {
-  if (stack_pos >= STACK_SIZE)
+  if (stack_pos >= JSON_STACK_SIZE)
     return false;
 
   stack[stack_pos++] = type;
@@ -148,7 +169,7 @@ JSON::append(const char *value)
 {
   size_t len = strlen(value);
 
-  if (buffer_pos + len > sizeof(buffer))
+  if (buffer_pos + len > buffer_len)
     return false;
 
   memcpy(buffer + buffer_pos, value, len);
