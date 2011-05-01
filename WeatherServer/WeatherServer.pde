@@ -34,6 +34,7 @@
 #include <HomeWeather.h>
 #include <ClientInfo.h>
 #include <JSON.h>
+#include <Crypto.h>
 
 /* RF pins. */
 #define RF_RX_PIN 2
@@ -503,6 +504,7 @@ post_json_to_server(void)
   SensorValue *sensor;
   int i, j;
   char *json_data = 0;
+  Sha1 sha1 = Sha1();
 
   /* Post data to server. */
 
