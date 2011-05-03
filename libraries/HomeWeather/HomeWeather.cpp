@@ -24,18 +24,19 @@
 #include "HomeWeather.h"
 
 void
-HomeWeather::print_label(int indent, const char *label)
+HomeWeather::print_label(int indent, const prog_char label[])
 {
   while (indent--)
-    Serial.print(" ");
+    Serial.print(' ', BYTE);
 
-  Serial.print(label);
+  print(label);
 
-  Serial.print(": ");
+  Serial.print(':', BYTE);
+  Serial.print(' ', BYTE);
 }
 
 void
-HomeWeather::print_data(int indent, const char *label,
+HomeWeather::print_data(int indent, const prog_char label[],
                         uint8_t *data, size_t datalen)
 {
   int i;
@@ -45,11 +46,11 @@ HomeWeather::print_data(int indent, const char *label,
   for (i = 0; i < datalen; i++)
     Serial.print(data[i], HEX);
 
-  Serial.println("");
+  newline();
 }
 
 void
-HomeWeather::print_dotted(int indent, const char *label,
+HomeWeather::print_dotted(int indent, const prog_char label[],
                           uint8_t *data, size_t datalen)
 {
   int i;
@@ -59,15 +60,15 @@ HomeWeather::print_dotted(int indent, const char *label,
   for (i = 0; i < datalen; i++)
     {
       if (i > 0)
-        Serial.print(".");
+        Serial.print('.', BYTE);
       Serial.print((int) data[i]);
     }
 
-  Serial.println("");
+  newline();
 }
 
 void
-HomeWeather::print_progstr(const prog_char str[])
+HomeWeather::print(const prog_char str[])
 {
   char c;
 
@@ -79,7 +80,14 @@ HomeWeather::print_progstr(const prog_char str[])
 }
 
 void
-HomeWeather::print_progstr(Client *client, const prog_char str[])
+HomeWeather::println(const prog_char str[])
+{
+  print(str);
+  newline();
+}
+
+void
+HomeWeather::print(Client *client, const prog_char str[])
 {
   uint8_t c;
 
@@ -88,4 +96,25 @@ HomeWeather::print_progstr(Client *client, const prog_char str[])
 
   while ((c = pgm_read_byte(str++)))
     client->write(c);
+}
+
+void
+HomeWeather::println(Client *client, const prog_char str[])
+{
+  print(client, str);
+  newline(client);
+}
+
+void
+HomeWeather::newline(void)
+{
+  Serial.print('\r', BYTE);
+  Serial.print('\n', BYTE);
+}
+
+void
+HomeWeather::newline(Client *client)
+{
+  client->write('\r');
+  client->write('\n');
 }

@@ -26,6 +26,7 @@
 #define JSON_H
 
 #include "WProgram.h"
+#include <avr/pgmspace.h>
 
 #define JSON_STACK_SIZE 8
 
@@ -39,10 +40,10 @@ public:
 
   bool add_object(void);
 
-  bool add(const char *key, int32_t value);
-  bool add(const char *key, const char *value);
-  bool add(const char *key, const uint8_t *data, size_t data_len);
-  bool add_array(const char *key);
+  bool add(const prog_char key[], int32_t value);
+  bool add(const prog_char key[], const char *value);
+  bool add(const prog_char key[], const uint8_t *data, size_t data_len);
+  bool add_array(const prog_char key[]);
 
   bool pop(void);
   char *finish(void);
@@ -51,6 +52,7 @@ private:
 
   bool push(char type);
   bool append(const char *value);
+  bool append_progstr(const prog_char value[]);
   bool append(int32_t value);
   bool is_object();
   bool obj_separator();

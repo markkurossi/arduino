@@ -36,19 +36,27 @@ class HomeWeather
 public:
 
   /* Print label `label' with the indentation `indent'. */
-  static void print_label(int indent, const char *label);
+  static void print_label(int indent, const prog_char label[]);
 
   /* Print the data `data', `datalen' to serial line as hex string.
      The argument `label' specifies a label for the data. */
-  static void print_data(int indent, const char *label, uint8_t *data,
+  static void print_data(int indent, const prog_char label[], uint8_t *data,
                          size_t datalen);
 
   /* Print the data `data', `datalen' to serial line as dotted decimal
      string.  The argument `label' specifies a label for the data. */
-  static void print_dotted(int indent, const char *label, uint8_t *data,
+  static void print_dotted(int indent, const prog_char label[], uint8_t *data,
                            size_t datalen);
 
-  static void print_progstr(const prog_char str[]);
+  static void print(const prog_char str[]);
 
-  static void print_progstr(Client *client, const prog_char str[]);
+  static void println(const prog_char str[]);
+
+  static void print(Client *client, const prog_char str[]);
+
+  static void println(Client *client, const prog_char str[]);
+
+  static void newline(void);
+
+  static void newline(Client *client);
 };

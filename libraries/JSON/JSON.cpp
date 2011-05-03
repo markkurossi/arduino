@@ -51,7 +51,7 @@ JSON::add_object(void)
 }
 
 bool
-JSON::add(const char *key, int32_t value)
+JSON::add(const prog_char key[], int32_t value)
 {
   if (!is_object())
     return false;
@@ -59,11 +59,11 @@ JSON::add(const char *key, int32_t value)
   if (!obj_separator())
     return false;
 
-  return append("\"") && append(key) && append("\":") && append(value);
+  return append("\"") && append_progstr(key) && append("\":") && append(value);
 }
 
 bool
-JSON::add(const char *key, const char *value)
+JSON::add(const prog_char key[], const char *value)
 {
   if (!is_object())
     return false;
@@ -71,12 +71,12 @@ JSON::add(const char *key, const char *value)
   if (!obj_separator())
     return false;
 
-  return (append("\"") && append(key) && append("\":\"")
+  return (append("\"") && append_progstr(key) && append("\":\"")
           && append(value) && append("\""));
 }
 
 bool
-JSON::add(const char *key, const uint8_t *data, size_t data_len)
+JSON::add(const prog_char key[], const uint8_t *data, size_t data_len)
 {
   size_t i;
   char buf[4];
@@ -87,7 +87,7 @@ JSON::add(const char *key, const uint8_t *data, size_t data_len)
   if (!obj_separator())
     return false;
 
-  if (!append("\"") || !append(key) || !append("\":\""))
+  if (!append("\"") || !append_progstr(key) || !append("\":\""))
     return false;
 
   for (i = 0; i < data_len; i++)
@@ -173,6 +173,20 @@ JSON::append(const char *value)
     return false;
 
   memcpy(buffer + buffer_pos, value, len);
+  buffer_pos += len;
+
+  return true;
+}
+
+bool
+JSON::append_progstr(const prog_char value[])
+{
+  size_t len = strlen_P(value);
+
+  if (buffer_pos + len > buffer_len)
+    return false;
+
+  memcpy_P(buffer + buffer_pos, value, len);
   buffer_pos += len;
 
   return true;
