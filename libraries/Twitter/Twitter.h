@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef JSON_H
-#define JSON_H
+#ifndef TWITTER_H
+#define TWITTER_H
 
 #include "WProgram.h"
 #include <avr/pgmspace.h>
@@ -90,4 +90,4 @@ private:
   size_t buffer_len;
 };
 
-#endif /* not JSON_H */
+#endif /* not TWITTER_H */

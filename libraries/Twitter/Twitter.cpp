@@ -214,13 +214,7 @@ Twitter::proxy_post(uint8_t ip[4], uint16_t port, const char *message,
 {
   char *cp;
 
-#if 1
   create_nonce();
-#else
-  memcpy(nonce, "\xf0\xba\xce\x2f\x79\x8e\xa9\xd1", sizeof(nonce));
-  timestamp = 1304409531L;
-#endif
-
   compute_authorization(message, server, uri, consumer_key, consumer_secret,
                         token, token_secret);
 
