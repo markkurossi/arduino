@@ -49,7 +49,7 @@ uint16_t twitter_port = 8080;
 
 unsigned long last_tweet = 0;
 
-#define TWEET_DELTA (15L * 60L)
+#define TWEET_DELTA (60L * 60L)
 
 /* Work buffer for twitter client.  This shold be fine for normal
    operations, the biggest items that are stored into the working
