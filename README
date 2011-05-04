@@ -5,6 +5,9 @@
 
 * Home Sensors
 
+Home sensors is framework for collecting sensor (temperature,
+humidity) information from your home and aggregating it vai one
+Ethernet Shield enabled Arduino server.
 
 * The content of the `libraries' directory
 
