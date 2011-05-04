@@ -42,8 +42,49 @@ const static char s_dec[] PROGMEM = "Dec";
 
 Twitter::Twitter(char *buffer, size_t buffer_len)
   : buffer(buffer),
-    buffer_len(buffer_len)
+    buffer_len(buffer_len),
+    server(0),
+    uri(0)
 {
+}
+
+void
+Twitter::set_twitter_endpoint(const prog_char server[], const prog_char uri[],
+                              uint8_t ip[4], uint16_t port, bool proxy)
+{
+  this->server = server;
+  this->uri = uri;
+  this->ip = ip;
+  this->port = port;
+
+  this->proxy = proxy ? 1 : 0;
+}
+
+void
+Twitter::set_client_id(const prog_char consumer_key[],
+                       const prog_char consumer_secret[])
+{
+  this->consumer_key = consumer_key;
+  this->consumer_secret = consumer_secret;
+}
+
+void
+Twitter::set_account_id(const prog_char access_token[],
+                        const prog_char token_secret[])
+{
+  this->access_token.pgm = access_token;
+  this->token_secret.pgm = token_secret;
+
+  this->access_token_pgm = 1;
+}
+
+void
+Twitter::set_account_id(int access_token, int token_secret)
+{
+  this->access_token.eeprom = access_token;
+  this->token_secret.eeprom = token_secret;
+
+  this->access_token_pgm = 0;
 }
 
 unsigned long
@@ -207,16 +248,13 @@ Twitter::parse_month(char *str, char **end)
 }
 
 bool
-Twitter::proxy_post(uint8_t ip[4], uint16_t port, const char *message,
-                    const char *server, const char *uri,
-                    const char *consumer_key, const char *consumer_secret,
-                    const char *token, const char *token_secret)
+Twitter::post_status(const char *message)
 {
   char *cp;
+  int i;
 
   create_nonce();
-  compute_authorization(message, server, uri, consumer_key, consumer_secret,
-                        token, token_secret);
+  compute_authorization(message);
 
   /* Post message to twitter. */
 
@@ -228,13 +266,19 @@ Twitter::proxy_post(uint8_t ip[4], uint16_t port, const char *message,
       return false;
     }
 
-  http_print(&http, PSTR("POST http://"));
-  http.write(server);
-  http.write(uri);
+  http_print(&http, PSTR("POST "));
+
+  if (proxy)
+    {
+      http_print(&http, PSTR("http://"));
+      http_print(&http, server);
+    }
+
+  http_print(&http, uri);
   http_println(&http, PSTR(" HTTP/1.1"));
 
   http_print(&http, PSTR("Host: "));
-  http.write(server);
+  http_print(&http, server);
   http_newline(&http);
 
   http_println(&http,
@@ -244,7 +288,7 @@ Twitter::proxy_post(uint8_t ip[4], uint16_t port, const char *message,
   /* Authorization header. */
   http_print(&http, PSTR("Authorization: OAuth oauth_consumer_key=\""));
 
-  url_encode(buffer, consumer_key);
+  url_encode_pgm(buffer, consumer_key);
   http.write(buffer);
 
   http_print(&http, PSTR("\",oauth_signature_method=\"HMAC-SHA1"));
@@ -260,7 +304,11 @@ Twitter::proxy_post(uint8_t ip[4], uint16_t port, const char *message,
 
   http_print(&http, PSTR("\",oauth_version=\"1.0\",oauth_token=\""));
 
-  url_encode(buffer, token);
+  if (access_token_pgm)
+    url_encode_pgm(buffer, access_token.pgm);
+  else
+    url_encode_eeprom(buffer, access_token.eeprom);
+
   http.write(buffer);
 
   http_print(&http, PSTR("\",oauth_signature=\""));
@@ -290,44 +338,113 @@ Twitter::proxy_post(uint8_t ip[4], uint16_t port, const char *message,
   /* And finally content. */
   http.write(buffer);
 
+  /* Read response status line. */
+  if (!read_line(&http, buffer, buffer_len) || buffer[0] == '\0')
+    {
+      http.stop();
+      return false;
+    }
+
+  int response_code;
+
+  /* HTTP/1.1 200 Success */
+  for (i = 0; buffer[i] && buffer[i] != ' '; i++)
+    ;
+  if (buffer[i])
+    response_code = atoi(buffer + i + 1);
+  else
+    response_code = 0;
+
+  bool success = (200 <= response_code && response_code < 300);
+
+  if (!success)
+    Serial.println(buffer);
+
+  /* Skip header. */
+  while (true)
+    {
+      if (!read_line(&http, buffer, buffer_len))
+        {
+          http.stop();
+          return false;
+        }
+
+      if (buffer[0] == '\0')
+        break;
+    }
+
+  /* Handle content. */
   while (http.connected())
     {
       while (http.available() > 0)
         {
           uint8_t byte = http.read();
 
-          Serial.print(byte, BYTE);
+          if (!success)
+            Serial.print(byte, BYTE);
         }
       delay(100);
     }
 
   http.stop();
-  Serial.println("");
 
-  return true;
+  if (!success)
+    Serial.println("");
+
+  return success;
+}
+
+char *
+Twitter::url_encode(char *buffer, char ch)
+{
+  if ('0' <= ch && ch <= '9'
+      || 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z'
+      || ch == '-' || ch == '.' || ch == '_' || ch == '~')
+    {
+      *buffer++ = ch;
+    }
+  else
+    {
+      int val = ((int) ch) & 0xff;
+
+      snprintf(buffer, 4, "%%%02X", val);
+      buffer += 3;
+    }
+
+  *buffer = '\0';
+
+  return buffer;
 }
 
 char *
 Twitter::url_encode(char *buffer, const char *data)
 {
-  for (; *data; data++)
-    {
-      char cp = *data;
+  char ch;
 
-      if ('0' <= cp && cp <= '9'
-          || 'a' <= cp && cp <= 'z' || 'A' <= cp && cp <= 'Z'
-          || cp == '-' || cp == '.' || cp == '_' || cp == '~')
-        {
-          *buffer++ = cp;
-        }
-      else
-        {
-          snprintf(buffer, 4, "%%%02X", cp);
-          buffer += 3;
-        }
-    }
+  while ((ch = *data++))
+    buffer = url_encode(buffer, ch);
 
-  *buffer = '\0';
+  return buffer;
+}
+
+char *
+Twitter::url_encode_pgm(char *buffer, const prog_char data[])
+{
+  char ch;
+
+  while ((ch = pgm_read_byte(data++)))
+    buffer = url_encode(buffer, ch);
+
+  return buffer;
+}
+
+char *
+Twitter::url_encode_eeprom(char *buffer, int address)
+{
+  char ch;
+
+  while ((ch = EEPROM.read(address++)))
+    buffer = url_encode(buffer, ch);
 
   return buffer;
 }
@@ -399,18 +516,30 @@ Twitter::auth_add_pgm(const prog_char str[])
 }
 
 void
-Twitter::auth_add_param(bool first, const prog_char key[], const char *value,
-                        char *workbuf)
+Twitter::auth_add_param(const prog_char key[], const char *value, char *workbuf)
 {
-  if (!first)
-    auth_add_pgm(PSTR("%26"));
+  /* Add separator.  We know that this method is not used to add the
+     first parameter. */
+  auth_add_param_separator();
 
   auth_add_pgm(key);
 
-  auth_add_pgm(PSTR("%3D"));
+  auth_add_value_separator();
 
   url_encode(workbuf, value);
   auth_add(workbuf);
+}
+
+void
+Twitter::auth_add_param_separator(void)
+{
+  auth_add_pgm(PSTR("%26"));
+}
+
+void
+Twitter::auth_add_value_separator(void)
+{
+  auth_add_pgm(PSTR("%3D"));
 }
 
 void
@@ -425,45 +554,58 @@ Twitter::create_nonce(void)
 }
 
 void
-Twitter::compute_authorization(const char *message, const char *server,
-                               const char *uri, const char *consumer_key,
-                               const char *consumer_secret, const char *token,
-                               const char *token_secret)
+Twitter::compute_authorization(const char *message)
 {
   char *cp = buffer;
 
   /* Compute key and init HMAC. */
 
-  cp = url_encode(buffer, consumer_secret);
+  cp = url_encode_pgm(buffer, consumer_secret);
   *cp++ = '&';
-  cp = url_encode(cp, token_secret);
+
+  if (access_token_pgm)
+    cp = url_encode_pgm(cp, token_secret.pgm);
+  else
+    cp = url_encode_eeprom(cp, token_secret.eeprom);
 
   Sha1.initHmac((uint8_t *) buffer, cp - buffer);
 
   auth_add_pgm(PSTR("POST&http%3A%2F%2F"));
-  auth_add(server);
+  auth_add_pgm(server);
 
-  url_encode(buffer, uri);
+  url_encode_pgm(buffer, uri);
   auth_add(buffer);
 
   auth_add('&');
 
-  auth_add_param(true,  PSTR("oauth_consumer_key"), consumer_key, buffer);
+  auth_add_pgm(PSTR("oauth_consumer_key"));
+  auth_add_value_separator();
+  url_encode_pgm(buffer, consumer_key);
+  auth_add(buffer);
 
   cp = hex_encode(buffer, nonce, sizeof(nonce));
 
-  auth_add_param(false, PSTR("oauth_nonce"), buffer, cp + 1);
+  auth_add_param(PSTR("oauth_nonce"), buffer, cp + 1);
 
-  auth_add_param(false, PSTR("oauth_signature_method"), "HMAC-SHA1", buffer);
+  auth_add_param(PSTR("oauth_signature_method"), "HMAC-SHA1", buffer);
 
   sprintf(buffer, "%ld", timestamp);
-  auth_add_param(false, PSTR("oauth_timestamp"), buffer, cp + 1);
+  auth_add_param(PSTR("oauth_timestamp"), buffer, cp + 1);
 
-  auth_add_param(false, PSTR("oauth_token"), token, buffer);
-  auth_add_param(false, PSTR("oauth_version"), "1.0", buffer);
+  auth_add_param_separator();
+
+  auth_add_pgm(PSTR("oauth_token"));
+  auth_add_value_separator();
+  if (access_token_pgm)
+    url_encode_pgm(buffer, access_token.pgm);
+  else
+    url_encode_eeprom(buffer, access_token.eeprom);
+  auth_add(buffer);
+
+  auth_add_param(PSTR("oauth_version"), "1.0", buffer);
 
   cp = url_encode(buffer, message);
-  auth_add_param(false, PSTR("status"), buffer, cp + 1);
+  auth_add_param(PSTR("status"), buffer, cp + 1);
 
   signature = Sha1.resultHmac();
 

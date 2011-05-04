@@ -28,6 +28,7 @@
 #include <DallasTemperature.h>
 #include <sha1.h>
 #include <Time.h>
+#include <EEPROM.h>
 #include <Twitter.h>
 
 /* OneWire bus pin. */
@@ -38,9 +39,9 @@ DallasTemperature sensors(&one_wire);
 
 /* Local network configuration. */
 uint8_t mac[6] =     {0xC4, 0x2C, 0x3A, 0x3B, 0xC5};
-uint8_t ip[4] =      {172, 21, 23, 59};
-uint8_t gateway[4] = {172, 21, 23, 1};
-uint8_t subnet[4] =  {255, 255, 255, 0};
+uint8_t ip[4] =      {172, 21, 38, 108};
+uint8_t gateway[4] = {172, 21, 38, 1};
+uint8_t subnet[4] =  {255, 255, 254, 0};
 
 /* Connect via HTTP proxy. */
 uint8_t twitter_ip[4] = {172, 16, 99, 10};
@@ -51,13 +52,15 @@ unsigned long last_tweet = 0;
 
 #define TWEET_DELTA (5L * 60L)
 
-/* XXX check the size */
+/* Work buffer for twitter client.  This shold be fine for normal
+   operations, the biggest items that are stored into the working
+   buffer are URL encoded consumer and token secrets and HTTP response
+   header lines. */
 char buffer[512];
 
-char *consumer_key = "sxRMVcaaruRhi6hpJgyg";
-char *consumer_secret = "NEBmeBtIr5uUTPpIDpeQkKG2GDHSE10XTfzkfweUlv0";
-char *token = "124707650-7sXFtUAWMYIuyPW49mGRzOlHgOVtTrXVfuLrJxzF";
-char *token_secret = "sSTaef42ZXB3Bzvh14IKv05QuVjCtyT0xveZdGZK4Y";
+const static char consumer_key[] PROGMEM = "3azqS8rD5Ku7MRHY74qFRg";
+const static char consumer_secret[] PROGMEM
+= "S67Jon338GJ0sNxMyWVe5ccfrH1z3HtjrVGj3xiXApQ";
 
 Twitter twitter(buffer, sizeof(buffer));
 
@@ -70,6 +73,20 @@ setup()
   sensors.begin();
 
   Ethernet.begin(mac, ip, gateway, subnet);
+
+  twitter.set_twitter_endpoint(PSTR("api.twitter.com"),
+                               PSTR("/1/statuses/update.json"),
+                               twitter_ip, twitter_port, true);
+  twitter.set_client_id(consumer_key, consumer_secret);
+
+#if 1
+  /* Read OAuth account identification from EEPROM. */
+  twitter.set_account_id(256, 384);
+#else
+  /* Set OAuth account identification from program memory. */
+  twitter.set_account_id(PSTR("*** set account access token here ***"),
+                         PSTR("*** set account token secret here ***"));
+#endif
 
   delay(500);
 }
@@ -107,17 +124,15 @@ loop()
               char msg[32];
               long val = temp * 100L;
 
-              sprintf(msg, "Office temperature is %ld.%02ld",
+              sprintf(msg, "Office temperature is %ld.%02ld\302\260C",
                       val / 100L, val % 100L);
 
               Serial.println(msg);
 
-              if (true)
-                twitter.proxy_post(twitter_ip, twitter_port, msg,
-                                   "api.twitter.com",
-                                   "/1/statuses/update.json",
-                                   consumer_key, consumer_secret, token,
-                                   token_secret);
+              if (twitter.post_status(msg))
+                Serial.println("Status updated");
+              else
+                Serial.println("Update failed");
             }
         }
     }
