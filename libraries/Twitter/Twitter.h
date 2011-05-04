@@ -70,9 +70,19 @@ public:
      `access_token', `token_secret'. */
   void set_account_id(int access_token, int token_secret);
 
-  unsigned long get_time(uint8_t ip[4], uint16_t port, const char *server);
+  /* Tests if this twitter instance is ready for twitter
+     communication.  The method returns true if twitter messages can
+     be sent and false if the twitter instance is still initializing.
+     You should keep calling this method from your loop() and do your
+     twitter interactions when this method returns true. */
+  bool is_ready(void);
 
-  void set_time(unsigned long now);
+  /* Gets the current UTC time.  The twitter module queries and
+     maintains the UTC time based on server HTTP `Date' response
+     header.  The method returns the current UTC Unix time in seconds,
+     or 0 if the time has not been resolved yet.  This will return a
+     non-zero value after init() has returned true. */
+  unsigned long get_time(void);
 
   /* Post status message `message' to twitter.  The message must be
      UTF-8 encoded.  The method returns true if the status message was
@@ -114,9 +124,20 @@ private:
 
   bool read_line(Client *client, char *buffer, size_t buflen);
 
+  /* Queries the current time with a HEAD request to the server.  The
+     method returns true if the time was retrieved and false on
+     error. */
+  bool query_time(void);
+
   long parse_date(char *date);
 
   int parse_month(char *str, char **end);
+
+  /* The base timestamp for current time computation. */
+  unsigned long basetime;
+
+  /* Last milliseconds from the system clock. */
+  unsigned long last_millis;
 
   /* Flags. */
 

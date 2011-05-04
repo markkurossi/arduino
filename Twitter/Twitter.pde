@@ -47,7 +47,6 @@ uint8_t subnet[4] =  {255, 255, 254, 0};
 uint8_t twitter_ip[4] = {172, 16, 99, 10};
 uint16_t twitter_port = 8080;
 
-unsigned long basetime = 0;
 unsigned long last_tweet = 0;
 
 #define TWEET_DELTA (15L * 60L)
@@ -68,7 +67,7 @@ void
 setup()
 {
   Serial.begin(9600);
-  Serial.println("Twitter demo");
+  Serial.println("Arduino Twitter demo");
 
   sensors.begin();
 
@@ -94,23 +93,20 @@ setup()
 void
 loop()
 {
-  int i;
-
-  if (basetime == 0)
+  if (twitter.is_ready())
     {
-      /* Resolve base time. */
-      basetime = twitter.get_time(twitter_ip, twitter_port, "api.twitter.com");
+      unsigned long now = twitter.get_time();
 
-      Serial.print("Time is ");
-      Serial.println(basetime);
+      if (last_tweet == 0)
+        {
+          /* First round after twitter initialization. */
+          Serial.print("Time is ");
+          Serial.println(now);
 
-      /* Wait few seconds before making our first tweet.  This gives
-         our sensors some time to get running (I hope). */
-      last_tweet = basetime - TWEET_DELTA + 15L;
-    }
-  else
-    {
-      unsigned long now = basetime + millis() / 1000L;
+          /* Wait few seconds before making our first tweet.  This
+             gives our sensors some time to get running (I hope). */
+          last_tweet = now - TWEET_DELTA + 15L;
+        }
 
       sensors.requestTemperatures();
 
@@ -130,7 +126,6 @@ loop()
           Serial.println(msg);
 
           last_tweet = now;
-          twitter.set_time(now);
 
           if (twitter.post_status(msg))
             Serial.println("Status updated");

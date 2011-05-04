@@ -41,10 +41,15 @@ const static char s_nov[] PROGMEM = "Now";
 const static char s_dec[] PROGMEM = "Dec";
 
 Twitter::Twitter(char *buffer, size_t buffer_len)
-  : buffer(buffer),
+  : basetime(0L),
+    last_millis(0L),
+    timestamp(0),
+    buffer(buffer),
     buffer_len(buffer_len),
     server(0),
-    uri(0)
+    uri(0),
+    ip(0),
+    port(0)
 {
 }
 
@@ -87,23 +92,58 @@ Twitter::set_account_id(int access_token, int token_secret)
   this->access_token_pgm = 0;
 }
 
+bool
+Twitter::is_ready(void)
+{
+  if (basetime)
+    return true;
+
+  if (!query_time())
+    return false;
+
+  last_millis = millis();
+  basetime -= last_millis / 1000L;
+
+  return true;
+}
+
 unsigned long
-Twitter::get_time(uint8_t ip[4], uint16_t port, const char *server)
+Twitter::get_time(void)
+{
+  unsigned long now = millis();
+
+  if (now < last_millis)
+    /* Our internal clock wrapped around. */
+    basetime += 0xffffffffL / 1000L;
+
+  last_millis = now;
+
+  return basetime + now / 1000L;
+}
+
+bool
+Twitter::query_time(void)
 {
   Client http(ip, port);
 
   if (!http.connect())
     {
       println(PSTR("Could not connect to server"));
-      return 0;
+      return false;
     }
 
-  http_print(&http, PSTR("HEAD http://"));
-  http.write(server);
+  http_print(&http, PSTR("HEAD "));
+
+  if (proxy)
+    {
+      http_print(&http, PSTR("http://"));
+      http_print(&http, server);
+    }
+
   http_println(&http, PSTR("/ HTTP/1.1"));
 
   http_print(&http, PSTR("Host: "));
-  http.write(server);
+  http_print(&http, server);
   http_newline(&http);
 
   http_println(&http, PSTR("Connection: close"));
@@ -115,7 +155,7 @@ Twitter::get_time(uint8_t ip[4], uint16_t port, const char *server)
       if (!read_line(&http, buffer, buffer_len))
         {
           http.stop();
-          return 0;
+          break;
         }
 
       if ((buffer[0] == 'D' || buffer[0] == 'd')
@@ -125,19 +165,14 @@ Twitter::get_time(uint8_t ip[4], uint16_t port, const char *server)
           && (buffer[4] == ':'))
         {
           http.stop();
-          return parse_date(buffer + 5);
+          basetime = parse_date(buffer + 5);
+          break;
         }
     }
 
   http.stop();
 
-  return 0;
-}
-
-void
-Twitter::set_time(unsigned long time)
-{
-  timestamp = time;
+  return basetime != 0L;
 }
 
 long
@@ -199,7 +234,7 @@ Twitter::parse_date(char *date)
   if (end == cp)
     return 0;
 
-  return makeTime(tm) - millis() / 1000L;
+  return makeTime(tm);
 }
 
 int
@@ -252,6 +287,8 @@ Twitter::post_status(const char *message)
   int i;
 
   create_nonce();
+  timestamp = get_time();
+
   compute_authorization(message);
 
   /* Post message to twitter. */
