@@ -50,7 +50,7 @@ uint16_t twitter_port = 8080;
 unsigned long basetime = 0;
 unsigned long last_tweet = 0;
 
-#define TWEET_DELTA (5L * 60L)
+#define TWEET_DELTA (15L * 60L)
 
 /* Work buffer for twitter client.  This shold be fine for normal
    operations, the biggest items that are stored into the working
@@ -103,37 +103,39 @@ loop()
 
       Serial.print("Time is ");
       Serial.println(basetime);
+
+      /* Wait few seconds before making our first tweet.  This gives
+         our sensors some time to get running (I hope). */
+      last_tweet = basetime - TWEET_DELTA + 15L;
     }
   else
     {
       unsigned long now = basetime + millis() / 1000L;
 
-      if (now > last_tweet + TWEET_DELTA)
+      sensors.requestTemperatures();
+
+      float temp = sensors.getTempCByIndex(0);
+
+      Serial.println(temp);
+
+      if (temp != DEVICE_DISCONNECTED && now > last_tweet + TWEET_DELTA)
         {
-          Serial.println("Posting to Twitter");
+          char msg[32];
+          long val = temp * 100L;
+
+          sprintf(msg, "Office temperature is %ld.%02ld\302\260C",
+                  val / 100L, val % 100L);
+
+          Serial.print("Posting to Twitter: ");
+          Serial.println(msg);
 
           last_tweet = now;
           twitter.set_time(now);
 
-          sensors.requestTemperatures();
-
-          float temp = sensors.getTempCByIndex(0);
-
-          if (temp != DEVICE_DISCONNECTED)
-            {
-              char msg[32];
-              long val = temp * 100L;
-
-              sprintf(msg, "Office temperature is %ld.%02ld\302\260C",
-                      val / 100L, val % 100L);
-
-              Serial.println(msg);
-
-              if (twitter.post_status(msg))
-                Serial.println("Status updated");
-              else
-                Serial.println("Update failed");
-            }
+          if (twitter.post_status(msg))
+            Serial.println("Status updated");
+          else
+            Serial.println("Update failed");
         }
     }
 
