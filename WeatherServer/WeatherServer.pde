@@ -64,6 +64,15 @@
 #define EEPROM_ADDR_PROXY_SERVER	(EEPROM_ADDR_HTTP_PORT + 2)
 #define EEPROM_ADDR_PROXY_PORT	(EEPROM_ADDR_PROXY_SERVER + 4)
 
+#define OAUTH_ITEM_MAX_LENGTH	128
+
+#define EEPROM_ADDR_ACCESS_TOKEN	256
+#define EEPROM_ADDR_TOKEN_SECRET	384
+
+/* Next free EEPROM address is 512 which is the end of EEPROM on
+   ATmega168.  The ATmega328 has additional 512 bytes of EEPROM left
+   (total of 1kB). */
+
 SoftwareSerial rf_serial = SoftwareSerial(RF_RX_PIN, RF_TX_PIN);
 SerialPacket serial_packet = SerialPacket(&rf_serial);
 
@@ -198,6 +207,14 @@ setup(void)
   HomeWeather::print_label(4, PSTR("proxy-port"));
   Serial.println(proxy_port);
 
+  HomeWeather::print_label(2, PSTR("access-token"));
+  GetPut::eeprom_print_ascii(EEPROM_ADDR_ACCESS_TOKEN, OAUTH_ITEM_MAX_LENGTH);
+  Serial.println("");
+
+  HomeWeather::print_label(2, PSTR("token-secret"));
+  GetPut::eeprom_print_ascii(EEPROM_ADDR_TOKEN_SECRET, OAUTH_ITEM_MAX_LENGTH);
+  Serial.println("");
+
   HomeWeather::print_label(7, PSTR("verbose"));
   Serial.println((int) verbose);
 
@@ -313,6 +330,46 @@ process_command(void)
     }
   else if (strcmp_P(argv[0], PSTR("info")) == 0)
     {
+    }
+  else if (strcmp_P(argv[0], PSTR("access-token")) == 0)
+    {
+      HomeWeather::println(PSTR("Type Oauth access token followed by newline"));
+      for (i = 0; i < OAUTH_ITEM_MAX_LENGTH - 1; i++)
+        {
+          while (Serial.available() <= 0)
+            delay(100);
+
+          uint8_t byte = Serial.read();
+          if (byte == '\r' || byte == '\n')
+            break;
+
+          EEPROM.write(EEPROM_ADDR_ACCESS_TOKEN + i, byte);
+        }
+      EEPROM.write(EEPROM_ADDR_ACCESS_TOKEN + i, 0);
+
+      HomeWeather::print(PSTR("Read "));
+      Serial.print(i);
+      HomeWeather::println(PSTR(" bytes"));
+    }
+  else if (strcmp_P(argv[0], PSTR("token-secret")) == 0)
+    {
+      HomeWeather::println(PSTR("Type Oauth token secret followed by newline"));
+      for (i = 0; i < OAUTH_ITEM_MAX_LENGTH - 1; i++)
+        {
+          while (Serial.available() <= 0)
+            delay(100);
+
+          uint8_t byte = Serial.read();
+          if (byte == '\r' || byte == '\n')
+            break;
+
+          EEPROM.write(EEPROM_ADDR_TOKEN_SECRET + i, byte);
+        }
+      EEPROM.write(EEPROM_ADDR_TOKEN_SECRET + i, 0);
+
+      HomeWeather::print(PSTR("Read "));
+      Serial.print(i);
+      HomeWeather::println(PSTR(" bytes"));
     }
   else
     {

@@ -60,6 +60,10 @@ public:
   /* Write data `buf', `buflen' to the EEPROM address
      `eeprom_addr'. */
   static void eeprom_write_data(uint8_t *buf, size_t buflen, int eeprom_addr);
+
+  /* Print ASCII data from EEPROM address `eeprom_addr'.  The argument
+     `max_len' specifies the maximum length to print. */
+  static void eeprom_print_ascii(int eeprom_addr, int max_len);
 };
 
 #endif /* not GETPUT_H */

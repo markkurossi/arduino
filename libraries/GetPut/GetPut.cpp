@@ -152,3 +152,19 @@ GetPut::eeprom_write_data(uint8_t *buf, size_t buflen, int eeprom_addr)
   for (i = 0; i < buflen; i++)
     EEPROM.write(eeprom_addr + i, buf[i]);
 }
+
+void
+GetPut::eeprom_print_ascii(int eeprom_addr, int max_len)
+{
+  int i;
+
+  for (i = 0; i < max_len; i++)
+    {
+      uint8_t byte = EEPROM.read(eeprom_addr + i);
+
+      if (!byte)
+        break;
+
+      Serial.print(byte, BYTE);
+    }
+}
