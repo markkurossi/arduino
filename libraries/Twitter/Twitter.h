@@ -109,6 +109,9 @@ private:
   void http_println(Client *client, const prog_char str[]);
   void http_newline(Client *client);
 
+  /* Print the argument program memory string to serial output. */
+  void println(const prog_char str[]);
+
   bool read_line(Client *client, char *buffer, size_t buflen);
 
   long parse_date(char *date);

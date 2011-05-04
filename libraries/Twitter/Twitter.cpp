@@ -94,7 +94,7 @@ Twitter::get_time(uint8_t ip[4], uint16_t port, const char *server)
 
   if (!http.connect())
     {
-      Serial.println("E*connect");
+      println(PSTR("Could not connect to server"));
       return 0;
     }
 
@@ -148,8 +148,6 @@ Twitter::parse_date(char *date)
   char *end;
 
   memset(&tm, 0, sizeof(tm));
-
-  Serial.println(date);
 
   for (cp = date; *cp && *cp != ','; cp++)
     ;
@@ -262,7 +260,7 @@ Twitter::post_status(const char *message)
 
   if (!http.connect())
     {
-      Serial.println("E*connect");
+      println(PSTR("Could not connect to server"));
       return false;
     }
 
@@ -389,7 +387,7 @@ Twitter::post_status(const char *message)
   http.stop();
 
   if (!success)
-    Serial.println("");
+    println(PSTR(""));
 
   return success;
 }
@@ -610,9 +608,6 @@ Twitter::compute_authorization(const char *message)
   signature = Sha1.resultHmac();
 
   base64_encode(buffer, signature, HASH_LENGTH);
-
-  Serial.print("Signature: ");
-  Serial.println(buffer);
 }
 
 void
@@ -639,6 +634,21 @@ Twitter::http_newline(Client *client)
 {
   client->write('\r');
   client->write('\n');
+}
+
+void
+Twitter::println(const prog_char str[])
+{
+  uint8_t c;
+
+  if (!str)
+    return;
+
+  while ((c = pgm_read_byte(str++)))
+    Serial.write(c);
+
+  Serial.write('\r');
+  Serial.write('\n');
 }
 
 bool
