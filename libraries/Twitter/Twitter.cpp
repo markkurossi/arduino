@@ -281,8 +281,8 @@ Twitter::post_status(const char *message)
   char *cp;
   int i;
 
-  create_nonce();
   timestamp = get_time();
+  create_nonce();
 
   compute_authorization(message);
 
@@ -529,59 +529,13 @@ Twitter::base64_encode(char *buffer, const uint8_t *data, size_t data_len)
 }
 
 void
-Twitter::auth_add(char ch)
-{
-  Sha1.write(ch);
-}
-
-void
-Twitter::auth_add(const char *str)
-{
-  Sha1.print(str);
-}
-
-void
-Twitter::auth_add_pgm(const prog_char str[])
-{
-  uint8_t c;
-
-  while ((c = pgm_read_byte(str++)))
-    Sha1.print(c);
-}
-
-void
-Twitter::auth_add_param(const prog_char key[], const char *value, char *workbuf)
-{
-  /* Add separator.  We know that this method is not used to add the
-     first parameter. */
-  auth_add_param_separator();
-
-  auth_add_pgm(key);
-
-  auth_add_value_separator();
-
-  url_encode(workbuf, value);
-  auth_add(workbuf);
-}
-
-void
-Twitter::auth_add_param_separator(void)
-{
-  auth_add_pgm(PSTR("%26"));
-}
-
-void
-Twitter::auth_add_value_separator(void)
-{
-  auth_add_pgm(PSTR("%3D"));
-}
-
-void
 Twitter::create_nonce(void)
 {
   int i;
 
-  srandom(millis());
+  /* Nonce must be unique for the request timestamp value, so let's
+     use the timestamp as our random seed. */
+  srandom(timestamp);
 
   for (i = 0; i < sizeof(nonce); i++)
     nonce[i] = (uint8_t) random();
@@ -642,8 +596,54 @@ Twitter::compute_authorization(const char *message)
   auth_add_param(PSTR("status"), buffer, cp + 1);
 
   signature = Sha1.resultHmac();
+}
 
-  base64_encode(buffer, signature, HASH_LENGTH);
+void
+Twitter::auth_add(char ch)
+{
+  Sha1.write(ch);
+}
+
+void
+Twitter::auth_add(const char *str)
+{
+  Sha1.print(str);
+}
+
+void
+Twitter::auth_add_pgm(const prog_char str[])
+{
+  uint8_t c;
+
+  while ((c = pgm_read_byte(str++)))
+    Sha1.print(c);
+}
+
+void
+Twitter::auth_add_param(const prog_char key[], const char *value, char *workbuf)
+{
+  /* Add separator.  We know that this method is not used to add the
+     first parameter. */
+  auth_add_param_separator();
+
+  auth_add_pgm(key);
+
+  auth_add_value_separator();
+
+  url_encode(workbuf, value);
+  auth_add(workbuf);
+}
+
+void
+Twitter::auth_add_param_separator(void)
+{
+  auth_add_pgm(PSTR("%26"));
+}
+
+void
+Twitter::auth_add_value_separator(void)
+{
+  auth_add_pgm(PSTR("%3D"));
 }
 
 void

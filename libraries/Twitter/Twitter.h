@@ -89,40 +89,92 @@ public:
      posted and false on error. */
   bool post_status(const char *message);
 
-  char *url_encode(char *buffer, char ch);
-  char *url_encode(char *buffer, const char *data);
-  char *url_encode_pgm(char *buffer, const prog_char data[]);
-  char *url_encode_eeprom(char *buffer, int address);
+  /* URL encode character `ch' into the buffer `buffer'.  The method
+     returns a pointer to the next byte after the encoded value. */
+  static char *url_encode(char *buffer, char ch);
 
-  char *hex_encode(char *buffer, const uint8_t *data, size_t data_len);
+  /* URL encode c-string `data' into the buffer `buffer'.  The method
+     returns a pointer to the next byte after the encoded value. */
+  static char *url_encode(char *buffer, const char *data);
 
-  char *base64_encode(char *buffer, const uint8_t *data, size_t data_len);
+  /* URL encode program memory c-string `data' into the buffer
+     `buffer'.  The method returns a pointer to the next byte after
+     the encoded value. */
+  static char *url_encode_pgm(char *buffer, const prog_char data[]);
 
-  void auth_add(char ch);
+  /* URL encode EEPROM memory c-string that starts from address
+     `address' into the buffer `buffer'.  The method returns a pointer
+     to the next byte after the encoded value. */
+  static char *url_encode_eeprom(char *buffer, int address);
 
-  void auth_add(const char *str);
+  /* Hex encode binary data `data', `data_len' into the buffer
+     `buffer'.  The method returns a pointer to the next byte after
+     the encoded value. */
+  static char *hex_encode(char *buffer, const uint8_t *data, size_t data_len);
 
-  void auth_add_pgm(const prog_char str[]);
-
-  void auth_add_param(const char *key, const char *value, char *workbuf);
-
-  void auth_add_param_separator(void);
-  void auth_add_value_separator(void);
+  /* Base64 encode binary data `data', `data_len' into the buffer
+     `buffer'.  The method returns a pointer to the next byte after
+     the encoded value. */
+  static char *base64_encode(char *buffer, const uint8_t *data,
+                             size_t data_len);
 
 private:
 
+  /* Create a random nonce into the member `nonce.  The method uses
+     `timestamp' as its random seed so you must set it before calling
+     this method. */
   void create_nonce(void);
 
+  /* Compute OAuth signature for the status message `message'.  The
+     method uses the current state from consumer and access tokens and
+     from `timestamp' and `nonce' member.  The computed signature will
+     remain in the global `Sha1' instance and is pointed by
+     `signature'.  You must not use the `Sha1' instance before you
+     have consumed value. */
   void compute_authorization(const char *message);
 
-  void http_print(Client *client, const prog_char str[]);
-  void http_println(Client *client, const prog_char str[]);
-  void http_newline(Client *client);
+  /* Add character `ch' into the authorization signature hmac. */
+  void auth_add(char ch);
+
+  /* Add string `str' into the authorization signature hmac. */
+  void auth_add(const char *str);
+
+  /* Add program memory string `str' into the authorization signature
+     hmac. */
+  void auth_add_pgm(const prog_char str[]);
+
+  /* Add request parameter `key', `value' into the authorization
+     signature hmac.  The argument `workbuf' specifies a working
+     buffer for the method. */
+  void auth_add_param(const char *key, const char *value, char *workbuf);
+
+  /* Add authorization parameter separator into the authorization
+     signature hmac. */
+  void auth_add_param_separator(void);
+
+  /* Add request key-value separator into the authorization signature
+     hmac. */
+  void auth_add_value_separator(void);
+
+  /* Print program memory string `str' to the output stream of the
+     HTTP client `client'. */
+  static void http_print(Client *client, const prog_char str[]);
+
+  /* Print program memory string `str' and line separator string to
+     the output stream of the HTTP client `client'. */
+  static void http_println(Client *client, const prog_char str[]);
+
+  /* Print line separator string to the output stream of the HTTP
+     client `client'. */
+  static void http_newline(Client *client);
 
   /* Print the argument program memory string to serial output. */
-  void println(const prog_char str[]);
+  static void println(const prog_char str[]);
 
-  bool read_line(Client *client, char *buffer, size_t buflen);
+  /* Read a line from the connection `client' into the buffer `buffer'
+     that has `buflen' bytes of space.  The method returns true if a
+     line was read and false on error. */
+  static bool read_line(Client *client, char *buffer, size_t buflen);
 
   /* Queries the current time with a HEAD request to the server.  The
      method returns true if the time was retrieved and false on
@@ -135,8 +187,14 @@ private:
      otherwise. */
   bool process_date_header(char *buffer);
 
+  /* Parse the value of the HTTP Date header `date'.  The method
+     returns the Unix time value in seconds or 0 if the header could
+     not be parsed. */
   long parse_date(char *date);
 
+  /* Parse month name `str' and return its number (1-12).  The method
+     returns a pointer to the end of the parsed month in `end'.  The
+     method returns 0 if the month could not be parsed. */
   int parse_month(char *str, char **end);
 
   /* The base timestamp for current time computation. */
@@ -154,14 +212,20 @@ private:
   /* Is access token in PGM or in EEPROM? */
   unsigned int access_token_pgm : 1;
 
+  /* Random nonce for the OAuth request. */
   uint8_t nonce[8];
+
+  /* Request timestamp as Unix time. */
   unsigned long timestamp;
 
   /* This points to Sha1 so don't touch it before you have consumed
      the value. */
   uint8_t *signature;
 
+  /* Work buffer. */
   char *buffer;
+
+  /* The size of the work buffer `buffer'. */
   size_t buffer_len;
 
   /* Twitter server host name. */
