@@ -37,8 +37,14 @@ const static char s_jul[] PROGMEM = "Jul";
 const static char s_aug[] PROGMEM = "Aug";
 const static char s_sep[] PROGMEM = "Sep";
 const static char s_oct[] PROGMEM = "Oct";
-const static char s_nov[] PROGMEM = "Now";
+const static char s_nov[] PROGMEM = "Nov";
 const static char s_dec[] PROGMEM = "Dec";
+
+const static char *months[] PROGMEM =
+  {
+    s_jan, s_feb, s_mar, s_apr, s_may, s_jun,
+    s_jul, s_aug, s_sep, s_oct, s_nov, s_dec,
+  };
 
 Twitter::Twitter(char *buffer, size_t buffer_len)
   : basetime(0L),
@@ -98,13 +104,7 @@ Twitter::is_ready(void)
   if (basetime)
     return true;
 
-  if (!query_time())
-    return false;
-
-  last_millis = millis();
-  basetime -= last_millis / 1000L;
-
-  return true;
+  return query_time();
 }
 
 unsigned long
@@ -153,26 +153,41 @@ Twitter::query_time(void)
   while (http.connected())
     {
       if (!read_line(&http, buffer, buffer_len))
-        {
-          http.stop();
-          break;
-        }
+        break;
 
-      if ((buffer[0] == 'D' || buffer[0] == 'd')
-          && (buffer[1] == 'A' || buffer[1] == 'a')
-          && (buffer[2] == 'T' || buffer[2] == 't')
-          && (buffer[3] == 'E' || buffer[3] == 'e')
-          && (buffer[4] == ':'))
-        {
-          http.stop();
-          basetime = parse_date(buffer + 5);
-          break;
-        }
+      if (buffer[0] == '\0')
+        break;
+
+      if (process_date_header(buffer))
+        break;
     }
 
   http.stop();
 
   return basetime != 0L;
+}
+
+bool
+Twitter::process_date_header(char *buffer)
+{
+  if ((buffer[0] != 'D' && buffer[0] != 'd')
+      || (buffer[1] != 'A' && buffer[1] != 'a')
+      || (buffer[2] != 'T' && buffer[2] != 't')
+      || (buffer[3] != 'E' && buffer[3] != 'e')
+      || (buffer[4] != ':'))
+    return false;
+
+  unsigned long now = parse_date(buffer + 5);
+
+  if (now != 0)
+    {
+      /* We managed to parse the date header, now update system
+         basetime. */
+      last_millis = millis();
+      basetime = now - last_millis / 1000L;
+    }
+
+  return true;
 }
 
 long
@@ -203,7 +218,7 @@ Twitter::parse_date(char *date)
     return 0;
 
   tm.Month = parse_month(cp, &end);
-  if (tm.Month < 0)
+  if (tm.Month <= 0)
     return 0;
 
   cp = end + 1;
@@ -241,6 +256,7 @@ int
 Twitter::parse_month(char *str, char **end)
 {
   char *cp;
+  int i;
 
   for (cp = str; *cp && *cp != ' '; cp++)
     ;
@@ -252,30 +268,9 @@ Twitter::parse_month(char *str, char **end)
 
   *end = cp;
 
-  if (strcmp_P(str, s_jan) == 0)
-    return 1;
-  if (strcmp_P(str, s_feb) == 0)
-    return 2;
-  if (strcmp_P(str, s_mar) == 0)
-    return 3;
-  if (strcmp_P(str, s_apr) == 0)
-    return 4;
-  if (strcmp_P(str, s_may) == 0)
-    return 5;
-  if (strcmp_P(str, s_jun) == 0)
-    return 6;
-  if (strcmp_P(str, s_jul) == 0)
-    return 7;
-  if (strcmp_P(str, s_aug) == 0)
-    return 8;
-  if (strcmp_P(str, s_sep) == 0)
-    return 9;
-  if (strcmp_P(str, s_oct) == 0)
-    return 10;
-  if (strcmp_P(str, s_nov) == 0)
-    return 11;
-  if (strcmp_P(str, s_dec) == 0)
-    return 12;
+  for (i = 0; i < 12; i++)
+    if (strcmp_P(str, (char *) pgm_read_word(&(months[i]))) == 0)
+      return i + 1;
 
   return 0;
 }
@@ -406,6 +401,10 @@ Twitter::post_status(const char *message)
 
       if (buffer[0] == '\0')
         break;
+
+      /* Update our system base time from the response `Date'
+         header. */
+      process_date_header(buffer);
     }
 
   /* Handle content. */

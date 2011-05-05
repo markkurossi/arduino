@@ -129,6 +129,12 @@ private:
      error. */
   bool query_time(void);
 
+  /* Process the response header line `buffer' and update the system
+     `basetime' if the header is a HTTP Date header.  The method
+     returns true if the header line was a `Date' header and false
+     otherwise. */
+  bool process_date_header(char *buffer);
+
   long parse_date(char *date);
 
   int parse_month(char *str, char **end);
