@@ -199,6 +199,9 @@ Twitter::parse_date(char *date)
 
   memset(&tm, 0, sizeof(tm));
 
+  /* We could use sscanf to parse the date string but it adds 26 bytes
+     to our SRAM consumption so let's use this adhoc parser. */
+
   for (cp = date; *cp && *cp != ','; cp++)
     ;
 
@@ -402,7 +405,7 @@ Twitter::post_status(const char *message)
       if (buffer[0] == '\0')
         break;
 
-      /* Update our system base time from the response `Date'
+      /* Update our system basetime from the response `Date'
          header. */
       process_date_header(buffer);
     }
