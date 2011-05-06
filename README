@@ -20,8 +20,17 @@ fit nicely into my projects.  In case you miss something, you should
 check the original library locations from the originating URL
 locations below.
 
+** The rest
+
 The unmentioned libraries are developed by <mtr@iki.fi> and they are
 licensed under GPLv3.
+
+*** TODO
+
+ - JSON
+   - String values should be correctly encoded, currently the string
+     values are set as-is
+   - JSON decoding with SAX-like API
 
 ** Dallastemperature_370beta
 
