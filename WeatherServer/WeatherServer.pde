@@ -146,6 +146,8 @@ Available commands are:\n\
                 variables are:\n\
                   `id', `secret', `verbose', `configured',\n\
                   `mac', `ip', `gw', `subnet'\n\
+  access-token  read OAuth access token from input\n\
+  token-secret  read OAuth token secret from input\n\
   info          show current weather information\n";
 
 void
