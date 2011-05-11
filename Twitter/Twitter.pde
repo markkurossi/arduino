@@ -38,7 +38,7 @@ OneWire one_wire(ONE_WIRE_BUS);
 DallasTemperature sensors(&one_wire);
 
 /* Local network configuration. */
-uint8_t mac[6] =     {0xC4, 0x2C, 0x3A, 0x3B, 0xC5};
+uint8_t mac[6] =     {0x90, 0xa2, 0xda, 0x00, 0x41, 0xfb};
 uint8_t ip[4] =      {172, 21, 38, 108};
 uint8_t gateway[4] = {172, 21, 38, 1};
 uint8_t subnet[4] =  {255, 255, 254, 0};
