@@ -52,7 +52,7 @@ void Sha256Class::hashBlock() {
   f=state.w[5];
   g=state.w[6];
   h=state.w[7];
-  
+
   for (i=0; i<64; i++) {
     if (i>=16) {
       t1 = buffer.w[i&15] + buffer.w[(i-7)&15];
@@ -90,9 +90,10 @@ void Sha256Class::addUncounted(uint8_t data) {
   }
 }
 
-void Sha256Class::write(uint8_t data) {
+size_t Sha256Class::write(uint8_t data) {
   ++byteCount;
   addUncounted(data);
+  return 1;
 }
 
 void Sha256Class::pad() {
@@ -117,7 +118,7 @@ void Sha256Class::pad() {
 uint8_t* Sha256Class::result(void) {
   // Pad to complete the last block
   pad();
-  
+
   // Swap byte order back
   for (int i=0; i<8; i++) {
     uint32_t a,b;
@@ -128,7 +129,7 @@ uint8_t* Sha256Class::result(void) {
     b|=a>>24;
     state.w[i]=b;
   }
-  
+
   // Return pointer to hash (20 characters)
   return state.b;
 }

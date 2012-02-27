@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 2011 Markku Rossi
+ * Copyright (c) 2011-2012 Markku Rossi
  *
  * This program is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -22,7 +22,12 @@
  *
  */
 
+#if defined(ARDUINO) && ARDUINO >= 100
+#include "Arduino.h"
+#else
 #include "WProgram.h"
+#endif
+
 #include <Ethernet.h>
 #include <avr/pgmspace.h>
 

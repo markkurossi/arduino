@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 2011 Markku Rossi
+ * Copyright (c) 2011-2012 Markku Rossi
  *
  * This program is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -134,7 +134,7 @@ ClientInfo clients[MAX_CLIENTS];
 char json_buffer[512];
 JSON json = JSON(json_buffer, sizeof(json_buffer));
 
-const char bannerstr[] PROGMEM = "\
+const prog_char bannerstr[] PROGMEM = "\
 WeatherServer <http://www.iki.fi/mtr/HomeWeather/>\n\
 Copyright (c) 2011 Markku Rossi <mtr@iki.fi>\n\
 \n";
@@ -441,9 +441,9 @@ http_json_request(const prog_char method[], const prog_char uri[],
   uint8_t *server = proxy_server;
   uint16_t port = proxy_port;
 
-  Client http_client(server, port);
+  EthernetClient http_client;
 
-  if (!http_client.connect())
+  if (!http_client.connect(server, port))
     {
       if (verbose)
         HomeWeather::println(PSTR("Failed to connect to server"));

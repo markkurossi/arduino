@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 2011 Markku Rossi
+ * Copyright (c) 2011-2012 Markku Rossi
  *
  * This program is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -25,7 +25,12 @@
 #ifndef TWITTER_H
 #define TWITTER_H
 
+#if defined(ARDUINO) && ARDUINO >= 100
+#include "Arduino.h"
+#else
 #include "WProgram.h"
+#endif
+
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
 #include <sha1.h>
@@ -54,7 +59,7 @@ public:
      this twitter instance is used; the method does not copy the `ip'
      argument but stores a pointer to the provided value. */
   void set_twitter_endpoint(const prog_char server[], const prog_char uri[],
-                            uint8_t ip[4], uint16_t port, bool proxy);
+                            IPAddress ip, uint16_t port, bool proxy);
 
   /* Set the client application identification to `consumer_key',
      `consumer_secret'. */
@@ -235,7 +240,7 @@ private:
   const prog_char *uri;
 
   /* An IP address to connnect to. */
-  uint8_t *ip;
+  IPAddress ip;
 
   /* TCP port number to connnect to. */
   uint16_t port;

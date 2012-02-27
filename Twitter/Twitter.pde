@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 2011 Markku Rossi
+ * Copyright (c) 2011-2012 Markku Rossi
  *
  * This program is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -38,14 +38,15 @@ OneWire one_wire(ONE_WIRE_BUS);
 DallasTemperature sensors(&one_wire);
 
 /* Local network configuration. */
-uint8_t mac[6] =     {0x90, 0xa2, 0xda, 0x00, 0x41, 0xfb};
-uint8_t ip[4] =      {172, 21, 38, 108};
-uint8_t gateway[4] = {172, 21, 38, 1};
-uint8_t subnet[4] =  {255, 255, 254, 0};
+uint8_t mac[6] =     {0xc4, 0x2c, 0x03, 0x0a, 0x3b, 0xb5};
+IPAddress ip(192, 168, 1, 43);
+IPAddress dns(192, 168, 1, 43);
+IPAddress gateway(192, 168, 1, 1);
+IPAddress subnet(255, 255, 255, 0);
 
-/* Connect via HTTP proxy. */
-uint8_t twitter_ip[4] = {172, 16, 99, 10};
-uint16_t twitter_port = 8080;
+/* The IP address to connect to: Twitter or local HTTP proxy. */
+IPAddress twitter_ip(199, 59, 149, 232);
+uint16_t twitter_port = 80;
 
 unsigned long last_tweet = 0;
 
@@ -71,11 +72,22 @@ setup()
 
   sensors.begin();
 
-  Ethernet.begin(mac, ip, gateway, subnet);
+#if 1
+  if (Ethernet.begin(mac))
+    {
+      Serial.print("DHCP: ");
+      Ethernet.localIP().printTo(Serial);
+      Serial.println("");
+    }
+  else
+    Serial.println("DHCP configuration failed");
+#else
+  Ethernet.begin(mac, ip, dns, gateway, subnet);
+#endif
 
   twitter.set_twitter_endpoint(PSTR("api.twitter.com"),
                                PSTR("/1/statuses/update.json"),
-                               twitter_ip, twitter_port, true);
+                               twitter_ip, twitter_port, false);
   twitter.set_client_id(consumer_key, consumer_secret);
 
 #if 1

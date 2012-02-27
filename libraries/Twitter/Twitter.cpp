@@ -3,7 +3,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 2011 Markku Rossi
+ * Copyright (c) 2011-2012 Markku Rossi
  *
  * This program is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -54,14 +54,13 @@ Twitter::Twitter(char *buffer, size_t buffer_len)
     buffer_len(buffer_len),
     server(0),
     uri(0),
-    ip(0),
     port(0)
 {
 }
 
 void
 Twitter::set_twitter_endpoint(const prog_char server[], const prog_char uri[],
-                              uint8_t ip[4], uint16_t port, bool proxy)
+                              IPAddress ip, uint16_t port, bool proxy)
 {
   this->server = server;
   this->uri = uri;
@@ -124,11 +123,11 @@ Twitter::get_time(void)
 bool
 Twitter::query_time(void)
 {
-  Client http(ip, port);
+  EthernetClient http;
 
-  if (!http.connect())
+  if (!http.connect(ip, port))
     {
-      println(PSTR("Could not connect to server"));
+      println(PSTR("query_time: could not connect to server"));
       return false;
     }
 
@@ -291,9 +290,9 @@ Twitter::post_status(const char *message)
 
   /* Post message to twitter. */
 
-  Client http(ip, port);
+  EthernetClient http;
 
-  if (!http.connect())
+  if (!http.connect(ip, port))
     {
       println(PSTR("Could not connect to server"));
       return false;
@@ -418,7 +417,7 @@ Twitter::post_status(const char *message)
           uint8_t byte = http.read();
 
           if (!success)
-            Serial.print(byte, BYTE);
+            Serial.write(byte);
         }
       delay(100);
     }
@@ -619,7 +618,7 @@ Twitter::auth_add_pgm(const prog_char str[])
   uint8_t c;
 
   while ((c = pgm_read_byte(str++)))
-    Sha1.print(c);
+    Sha1.write(c);
 }
 
 void

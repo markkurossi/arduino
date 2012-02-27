@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 2011 Markku Rossi
+ * Copyright (c) 2011-2012 Markku Rossi
  *
  * This program is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -50,6 +50,11 @@
 #define EEPROM_ADDR_SECRET	(EEPROM_ADDR_ID + ID_LEN)
 #define EEPROM_ADDR_VERBOSE	(EEPROM_ADDR_SECRET + SECRET_LEN)
 
+#define OAUTH_ITEM_MAX_LENGTH	128
+
+#define EEPROM_ADDR_ACCESS_TOKEN	256
+#define EEPROM_ADDR_TOKEN_SECRET	384
+
 SoftwareSerial rf_serial = SoftwareSerial(RF_RX_PIN, RF_TX_PIN);
 SerialPacket serial_packet = SerialPacket(&rf_serial);
 
@@ -80,6 +85,8 @@ Available commands are:\n\
   set VAR VAL   sets the EEPROM variable VAR to the value VAL.  Possible\n\
                 variables are:\n\
                   `id', `secret', and `verbose'\n\
+  access-token  read OAuth access token from input\n\
+  token-secret  read OAuth token secret from input\n\
   info          show current weather information\n";
 
 const char err_cmd_invalid_args[] PROGMEM = "Invalid amount of arguments\n";
@@ -90,7 +97,7 @@ setup(void)
   int i;
 
   Serial.begin(9600);
-  HomeWeather::print_progstr(bannerstr);
+  HomeWeather::print(bannerstr);
 
   /* Start temperature sensors. */
   sensors.begin();
@@ -110,10 +117,18 @@ setup(void)
 
   verbose = EEPROM.read(EEPROM_ADDR_VERBOSE);
 
-  HomeWeather::print_data(7,       "id", id, sizeof(id));
-  HomeWeather::print_data(3,   "secret", secret, sizeof(secret));
+  HomeWeather::print_data(7,       PSTR("id"), id, sizeof(id));
+  HomeWeather::print_data(3,   PSTR("secret"), secret, sizeof(secret));
 
-  HomeWeather::print_label(2, "verbose");
+  HomeWeather::print_label(2, PSTR("access-token"));
+  GetPut::eeprom_print_ascii(EEPROM_ADDR_ACCESS_TOKEN, OAUTH_ITEM_MAX_LENGTH);
+  Serial.println("");
+
+  HomeWeather::print_label(2, PSTR("token-secret"));
+  GetPut::eeprom_print_ascii(EEPROM_ADDR_TOKEN_SECRET, OAUTH_ITEM_MAX_LENGTH);
+  Serial.println("");
+
+  HomeWeather::print_label(2, PSTR("verbose"));
   Serial.println((int) verbose);
 }
 
@@ -127,47 +142,87 @@ process_command(void)
   if (argc < 1)
     return;
 
-  if (strcmp(argv[0], "help") == 0)
+  if (strcmp_P(argv[0], PSTR("help")) == 0)
     {
-      HomeWeather::print_progstr(usagestr);
+      HomeWeather::print(usagestr);
     }
-  else if (strcmp(argv[0], "set") == 0)
+  else if (strcmp_P(argv[0], PSTR("set")) == 0)
     {
       if (argc != 3)
         {
-          HomeWeather::print_progstr(err_cmd_invalid_args);
+          HomeWeather::print(err_cmd_invalid_args);
           return;
         }
 
-      if (strcmp(argv[1], "id") == 0)
+      if (strcmp_P(argv[1], PSTR("id")) == 0)
         {
           GetPut::eeprom_parse_data(argv[2], id, sizeof(id), EEPROM_ADDR_ID);
         }
-      else if (strcmp(argv[1], "secret") == 0)
+      else if (strcmp_P(argv[1], PSTR("secret")) == 0)
         {
           GetPut::eeprom_parse_data(argv[2], secret, sizeof(secret),
                                     EEPROM_ADDR_SECRET);
         }
-      else if (strcmp(argv[1], "verbose") == 0)
+      else if (strcmp_P(argv[1], PSTR("verbose")) == 0)
         {
           verbose = (uint8_t) atoi(argv[2]);
           EEPROM.write(EEPROM_ADDR_VERBOSE, verbose);
         }
       else
         {
-          Serial.print("Unknown variable `");
+          HomeWeather::print(PSTR("Unknown variable `"));
           Serial.print(argv[1]);
-          Serial.println("'");
+          HomeWeather::println(PSTR("'"));
         }
     }
-  else if (strcmp(argv[0], "info") == 0)
+  else if (strcmp_P(argv[0], PSTR("info")) == 0)
     {
+    }
+  else if (strcmp_P(argv[0], PSTR("access-token")) == 0)
+    {
+      HomeWeather::println(PSTR("Type Oauth access token followed by newline"));
+      for (i = 0; i < OAUTH_ITEM_MAX_LENGTH - 1; i++)
+        {
+          while (Serial.available() <= 0)
+            delay(100);
+
+          uint8_t byte = Serial.read();
+          if (byte == '\r' || byte == '\n')
+            break;
+
+          EEPROM.write(EEPROM_ADDR_ACCESS_TOKEN + i, byte);
+        }
+      EEPROM.write(EEPROM_ADDR_ACCESS_TOKEN + i, 0);
+
+      HomeWeather::print(PSTR("Read "));
+      Serial.print(i);
+      HomeWeather::println(PSTR(" bytes"));
+    }
+  else if (strcmp_P(argv[0], PSTR("token-secret")) == 0)
+    {
+      HomeWeather::println(PSTR("Type Oauth token secret followed by newline"));
+      for (i = 0; i < OAUTH_ITEM_MAX_LENGTH - 1; i++)
+        {
+          while (Serial.available() <= 0)
+            delay(100);
+
+          uint8_t byte = Serial.read();
+          if (byte == '\r' || byte == '\n')
+            break;
+
+          EEPROM.write(EEPROM_ADDR_TOKEN_SECRET + i, byte);
+        }
+      EEPROM.write(EEPROM_ADDR_TOKEN_SECRET + i, 0);
+
+      HomeWeather::print(PSTR("Read "));
+      Serial.print(i);
+      HomeWeather::println(PSTR(" bytes"));
     }
   else
     {
-      Serial.print("Unknown command `");
+      HomeWeather::print(PSTR("Unknown command `"));
       Serial.print(argv[0]);
-      Serial.println("'");
+      HomeWeather::println(PSTR("'"));
     }
 }
 

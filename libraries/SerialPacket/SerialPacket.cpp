@@ -26,13 +26,13 @@ SerialPacket::send(uint8_t *data, size_t data_len)
     return false;
 
   /* Write header. */
-  serial->print(SP_SEP, BYTE);
-  serial->print(SP_SEP, BYTE);
-  serial->print(SP_SEP, BYTE);
-  serial->print(SP_HDR, BYTE);
+  serial->write(SP_SEP);
+  serial->write(SP_SEP);
+  serial->write(SP_SEP);
+  serial->write(SP_HDR);
 
   /* Data length. */
-  serial->print(data_len, BYTE);
+  serial->write((char) data_len);
 
   /* Write data escaping separators and escape bytes. */
   for (i = 0; i < data_len; i++)
@@ -42,29 +42,28 @@ SerialPacket::send(uint8_t *data, size_t data_len)
       switch (data[i])
         {
         case SP_SEP:
-          serial->print(SP_ESC, BYTE);
-          serial->print(0x1, BYTE);
+          serial->write(SP_ESC);
+          serial->write(0x1);
           break;
 
         case SP_ESC:
-          serial->print(SP_ESC, BYTE);
-          serial->print(0x2, BYTE);
+          serial->write(SP_ESC);
+          serial->write(0x2);
           break;
 
         default:
-          serial->print(data[i], BYTE);
+          serial->write(data[i]);
         }
     }
 
   /* Trailer. */
-  serial->print(SP_SEP, BYTE);
-  serial->print(SP_TRL, BYTE);
+  serial->write(SP_SEP);
 
   /* CRC. */
-  serial->print((crc >> 24) & 0xff, BYTE);
-  serial->print((crc >> 16) & 0xff, BYTE);
-  serial->print((crc >> 8) & 0xff, BYTE);
-  serial->print(crc & 0xff, BYTE);
+  serial->write((crc >> 24) & 0xff);
+  serial->write((crc >> 16) & 0xff);
+  serial->write((crc >> 8) & 0xff);
+  serial->write(crc & 0xff);
 
   return true;
 }

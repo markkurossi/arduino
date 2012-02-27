@@ -3,7 +3,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 2011 Markku Rossi
+ * Copyright (c) 2011-2012 Markku Rossi
  *
  * This program is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,12 +27,12 @@ void
 HomeWeather::print_label(int indent, const prog_char label[])
 {
   while (indent--)
-    Serial.print(' ', BYTE);
+    Serial.write(' ');
 
   print(label);
 
-  Serial.print(':', BYTE);
-  Serial.print(' ', BYTE);
+  Serial.write(':');
+  Serial.write(' ');
 }
 
 void
@@ -60,7 +60,7 @@ HomeWeather::print_dotted(int indent, const prog_char label[],
   for (i = 0; i < datalen; i++)
     {
       if (i > 0)
-        Serial.print('.', BYTE);
+        Serial.write('.');
       Serial.print((int) data[i]);
     }
 
@@ -70,13 +70,14 @@ HomeWeather::print_dotted(int indent, const prog_char label[],
 void
 HomeWeather::print(const prog_char str[])
 {
-  char c;
+  int i;
+  uint8_t c;
 
   if (!str)
     return;
 
-  while ((c = pgm_read_byte(str++)))
-    Serial.print(c, BYTE);
+  for (i = 0; (c = pgm_read_byte_near(str + i)); i++)
+    Serial.write(c);
 }
 
 void
@@ -89,12 +90,13 @@ HomeWeather::println(const prog_char str[])
 void
 HomeWeather::print(Client *client, const prog_char str[])
 {
+  int i;
   uint8_t c;
 
   if (!client || !str)
     return;
 
-  while ((c = pgm_read_byte(str++)))
+  for (i = 0; (c = pgm_read_byte_near(str + i)); i++)
     client->write(c);
 }
 
@@ -108,8 +110,8 @@ HomeWeather::println(Client *client, const prog_char str[])
 void
 HomeWeather::newline(void)
 {
-  Serial.print('\r', BYTE);
-  Serial.print('\n', BYTE);
+  Serial.write('\r');
+  Serial.write('\n');
 }
 
 void

@@ -3,7 +3,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 2011 Markku Rossi
+ * Copyright (c) 2011-2012 Markku Rossi
  *
  * This program is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -165,6 +165,6 @@ GetPut::eeprom_print_ascii(int eeprom_addr, int max_len)
       if (!byte)
         break;
 
-      Serial.print(byte, BYTE);
+      Serial.write(byte);
     }
 }
