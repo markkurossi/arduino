@@ -1,15 +1,15 @@
--*- outline -*-
+Mtr's Arduino Projects
+======================
 
-                        Mtr's Arduino Projects
-                        ======================
-
-* Home Sensors
+Home Sensors
+------------
 
 Home sensors is framework for collecting sensor (temperature,
 humidity) information from your home and aggregating it vai one
 Ethernet Shield enabled Arduino server.
 
-* The content of the `libraries' directory
+The content of the `libraries' directory
+----------------------------------------
 
 The libraries directory contains various utility libraries that are
 used in the Arduino projects.  This section describes the original
@@ -20,28 +20,28 @@ fit nicely into my projects.  In case you miss something, you should
 check the original library locations from the originating URL
 locations below.
 
-** The rest
+### The rest
 
 The unmentioned libraries are developed by <mtr@iki.fi> and they are
 licensed under GPLv3.
 
-*** TODO
+#### TODO
 
  - JSON
    - String values should be correctly encoded, currently the string
      values are set as-is
    - JSON decoding with SAX-like API
 
-** Dallastemperature_370beta
+### Dallastemperature_370beta
 
   - http://www.milesburton.com/?title=Dallas_Temperature_Control_Library
   - LGPLv2.1
 
-** OneWire
+### OneWire
 
   - http://www.pjrc.com/teensy/td_libs_OneWire.html
 
-*** License
+#### License
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -64,41 +64,43 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Much of the code was inspired by Derek Yerger's code, though I don't
 think much of that remains.  In any event that was..
+
     (copyleft) 2006 by Derek Yerger - Free to distribute freely.
 
 The CRC code was excerpted and inspired by the Dallas Semiconductor
 sample code bearing this copyright.
-//---------------------------------------------------------------------------
-// Copyright (C) 2000 Dallas Semiconductor Corporation, All Rights Reserved.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the "Software"),
-// to deal in the Software without restriction, including without limitation
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,
-// and/or sell copies of the Software, and to permit persons to whom the
-// Software is furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY,  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-// IN NO EVENT SHALL DALLAS SEMICONDUCTOR BE LIABLE FOR ANY CLAIM, DAMAGES
-// OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-// OTHER DEALINGS IN THE SOFTWARE.
-//
-// Except as contained in this notice, the name of Dallas Semiconductor
-// shall not be used except as stated in the Dallas Semiconductor
-// Branding Policy.
 
-** Sha
+    //---------------------------------------------------------------------------
+    // Copyright (C) 2000 Dallas Semiconductor Corporation, All Rights Reserved.
+    //
+    // Permission is hereby granted, free of charge, to any person obtaining a
+    // copy of this software and associated documentation files (the "Software"),
+    // to deal in the Software without restriction, including without limitation
+    // the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    // and/or sell copies of the Software, and to permit persons to whom the
+    // Software is furnished to do so, subject to the following conditions:
+    //
+    // The above copyright notice and this permission notice shall be included
+    // in all copies or substantial portions of the Software.
+    //
+    // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+    // OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    // MERCHANTABILITY,  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    // IN NO EVENT SHALL DALLAS SEMICONDUCTOR BE LIABLE FOR ANY CLAIM, DAMAGES
+    // OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+    // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+    // OTHER DEALINGS IN THE SOFTWARE.
+    //
+    // Except as contained in this notice, the name of Dallas Semiconductor
+    // shall not be used except as stated in the Dallas Semiconductor
+    // Branding Policy.
+
+### Sha
 
   - http://code.google.com/p/cryptosuite/
   - GPLv3
 
-** Time
+### Time
 
   - http://www.arduino.cc/playground/Code/Time
   - LGPLv2.1
